@@ -4,6 +4,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.acme.application.dto.UserRequest;
+import org.acme.domain.entity.RoleName;
 import org.acme.domain.entity.User;
 import org.acme.port.UserServicePort;
 
@@ -19,9 +21,9 @@ public class UserResource {
     UserServicePort userService;
 
     @POST
-    public Response addUser(User u){
+    public Response addUser(UserRequest request) {
 
-        Optional<String> error = userService.validateUser(u);
+        Optional<String> error = userService.validateUser(request);
 
         if (error.isPresent()) {
             return Response.status(Response.Status.CONFLICT)
@@ -29,8 +31,8 @@ public class UserResource {
                     .build();
         }
 
-        User newUser = userService.createUser(u);
-        return Response.ok(newUser).status(201).build();
+        User newUser = userService.createUser(request);
+        return Response.status(201).entity(newUser).build();
     }
 
     @PUT
@@ -94,6 +96,16 @@ public class UserResource {
     public List<User> findBySurname(@QueryParam("surname") String surname){
 
         return userService.findBySurname(surname);
+    }
+
+    @GET
+    @Path("/search/role")
+    public List<User> findByRole(@QueryParam("role") String role)
+    {
+
+        RoleName roleName = RoleName.valueOf(role.toUpperCase());
+
+        return  userService.findByRole(roleName);
     }
 
 

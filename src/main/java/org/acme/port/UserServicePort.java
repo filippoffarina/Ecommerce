@@ -1,5 +1,7 @@
 package org.acme.port;
 
+import org.acme.application.dto.UserRequest;
+import org.acme.domain.entity.RoleName;
 import org.acme.domain.entity.User;
 
 import java.util.List;
@@ -19,12 +21,14 @@ public interface UserServicePort {
 
     public List<User> findBySurname(String surname);
 
-    public User createUser(User u);
+    public User createUser(UserRequest request);
 
     public Optional<User> updateUser(String cf,String mail,Long number);
 
     public boolean deleteUser(String cf);
 
-    public Optional<String> validateUser(User u);
+    public Optional<String> validateUser(UserRequest request);
+
+    public List<User> findByRole(RoleName roleName);
 
 }

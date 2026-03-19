@@ -3,6 +3,9 @@ package org.acme.application.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.acme.application.dto.UserRequest;
+import org.acme.domain.entity.Role;
+import org.acme.domain.entity.RoleName;
 import org.acme.domain.entity.User;
 import org.acme.domain.entity.UserRepository;
 import org.acme.port.UserServicePort;
@@ -47,16 +50,31 @@ public class UserService implements UserServicePort {
         return userRepository.findBySurname(surname);
     }
 
-    @Transactional
-    public Optional<String> validateUser(User u) {
+    public List<User> findByRole(RoleName roleName){
 
-        if (userRepository.findByCF(u.getCodiceFiscale()).isPresent()) {
+        return userRepository.findByRole(roleName);
+    }
+
+    @Transactional
+    public Optional<String> validateUser(UserRequest request) {
+
+        if (request.roles == null || request.roles.isEmpty()) {
+            return Optional.of("Almeno un ruolo è obbligatorio");
+        }
+        for (String roleName : request.roles) {
+            try {
+                RoleName.valueOf(roleName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return Optional.of("Ruolo non valido: " + roleName);
+            }
+        }
+        if (userRepository.findByCF(request.codiceFiscale).isPresent()) {
             return Optional.of("Codice fiscale già registrato");
         }
-        if (userRepository.findByEmail(u.getMail()).isPresent()) {
+        if (userRepository.findByEmail(request.mail).isPresent()) {
             return Optional.of("Mail già registrata");
         }
-        if (u.getPhone() != null && userRepository.findByPhone(u.getPhone()).isPresent()) {
+        if (request.phone != null && userRepository.findByPhone(request.phone).isPresent()) {
             return Optional.of("Numero di telefono già registrato");
         }
 
@@ -64,7 +82,20 @@ public class UserService implements UserServicePort {
     }
 
     @Transactional
-    public User createUser(User u){
+    public User createUser(UserRequest request){
+
+        User u = new User();
+        u.setCodiceFiscale(request.codiceFiscale);
+        u.setName(request.name);
+        u.setSurname(request.surname);
+        u.setMail(request.mail);
+        u.setPhone(request.phone);
+
+        for (String roleName : request.roles) {
+            Role role = new Role();
+            role.setName(RoleName.valueOf(roleName.toUpperCase()));
+            u.getRoles().add(role);
+        }
 
         userRepository.persist(u);
         return u;

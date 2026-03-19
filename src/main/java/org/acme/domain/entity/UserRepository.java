@@ -35,6 +35,10 @@ public class UserRepository implements PanacheRepository<User> {
         return list("surname",surname);
     }
 
+    public List<User> findByRole(RoleName roleName){
+        return find("SELECT u FROM User u JOIN u.roles r WHERE r.name = ?1",roleName).list();
+    }
+
     public boolean deleteByCF(String cf){
 
         Optional<User> userT = findByCF(cf);
