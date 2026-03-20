@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.Response;
 import org.acme.application.dto.UserRequest;
 import org.acme.domain.entity.RoleName;
 import org.acme.domain.entity.User;
+import org.acme.port.AuthCheckerPort;
 import org.acme.port.UserServicePort;
 
 import java.util.List;
@@ -20,114 +21,173 @@ public class UserResource {
     @Inject
     UserServicePort userService;
 
+    @Inject
+    AuthCheckerPort authChecker;
+
     @POST
-    public Response addUser(UserRequest request) {
+    public Response addUser(@QueryParam("token") @DefaultValue("") String token,
+                            UserRequest request) {
 
-        Optional<String> error = userService.validateUser(request);
+        boolean dbVuoto = userService.getAll().isEmpty();
 
-        if (error.isPresent()) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(error.get())
-                    .build();
+        if (!dbVuoto) {
+            Response error = authChecker.check(token, RoleName.ADMIN);
+            if (error != null) return error;
         }
 
-        User newUser = userService.createUser(request);
-        return Response.status(201).entity(newUser).build();
+        Optional<String> validationError = userService.validateUser(request);
+        if (validationError.isPresent()) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(validationError.get()).build();
+        }
+
+        return Response.status(201).entity(userService.createUser(request)).build();
     }
 
     @PUT
     @Path("/updateProfile")
-    public Response update(@QueryParam("cf") String cf,@QueryParam("mail") String mail,@QueryParam("phone") Long number){
+    public Response update(@QueryParam("token") @DefaultValue("") String token,
+                           @QueryParam("cf") String cf,
+                           @QueryParam("mail") String mail,
+                           @QueryParam("phone") Long number) {
+
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
 
         return userService.updateUser(cf, mail, number)
                 .map(u -> Response.ok(u).build())
                 .orElse(Response.status(Response.Status.NOT_FOUND).build());
-
     }
 
     @PUT
-    @Path("/cf/roles/add")
-    public Response addRole(@QueryParam("cf") String cf, @QueryParam("role") String role) {
+    @Path("/roles/add")
+    public Response addRole(@QueryParam("token") @DefaultValue("") String token,
+                            @QueryParam("cf") String cf,
+                            @QueryParam("role") String role) {
 
-        Optional<String> error = userService.addRole(cf, role);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
 
-        return error.isPresent()
-                ? Response.status(Response.Status.BAD_REQUEST).entity(error.get()).build()
+        Optional<String> err = userService.addRole(cf, role);
+        return err.isPresent()
+                ? Response.status(Response.Status.BAD_REQUEST).entity(err.get()).build()
                 : Response.ok("Ruolo aggiunto con successo").build();
     }
 
     @DELETE
-    @Path("/cf/roles/remove")
-    public Response removeRole(@QueryParam("cf") String cf, @QueryParam("role") String role) {
+    @Path("/roles/remove")
+    public Response removeRole(@QueryParam("token") @DefaultValue("") String token,
+                               @QueryParam("cf") String cf,
+                               @QueryParam("role") String role) {
 
-        Optional<String> error = userService.removeRole(cf, role);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
 
-        return error.isPresent()
-                ? Response.status(Response.Status.BAD_REQUEST).entity(error.get()).build()
+        Optional<String> err = userService.removeRole(cf, role);
+        return err.isPresent()
+                ? Response.status(Response.Status.BAD_REQUEST).entity(err.get()).build()
                 : Response.ok("Rule removed").build();
     }
 
     @DELETE
     @Path("/deleteProfile")
-    public Response delete(@QueryParam("cf") String cf){
+    public Response delete(@QueryParam("token") @DefaultValue("") String token,
+                           @QueryParam("cf") String cf) {
+
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
 
         Boolean deleted = userService.deleteUser(cf);
-
         return deleted
                 ? Response.noContent().build()
                 : Response.status(Response.Status.NOT_FOUND).build();
     }
 
-
     @GET
-    public List<User> getAll(){
+    public Response getAll(@QueryParam("token") @DefaultValue("") String token) {
 
-        return userService.getAll();
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
+
+        return Response.ok(userService.getAll()).build();
     }
 
     @GET
     @Path("/search/fiscalcode")
-    public Optional<User> findByCF(@QueryParam("cf") String cf){
+    public Response findByCF(@QueryParam("token") @DefaultValue("") String token,
+                             @QueryParam("cf") String cf) {
 
-        return userService.findUserByCF(cf);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
+
+        return userService.findUserByCF(cf)
+                .map(u -> Response.ok(u).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @GET
     @Path("/search/email")
-    public Optional<User> findByMail(@QueryParam("mail") String mail){
+    public Response findByMail(@QueryParam("token") @DefaultValue("") String token,
+                               @QueryParam("mail") String mail) {
 
-        return userService.findUserByEmail(mail);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
+
+        return userService.findUserByEmail(mail)
+                .map(u -> Response.ok(u).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @GET
     @Path("/search/phone")
-    public Optional<User> findByPhone(@QueryParam("phone") Long number){
+    public Response findByPhone(@QueryParam("token") @DefaultValue("") String token,
+                                @QueryParam("phone") Long number) {
 
-        return userService.findByPhone(number);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
+
+        return userService.findByPhone(number)
+                .map(u -> Response.ok(u).build())
+                .orElse(Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @GET
     @Path("/search/name")
-    public List<User> findByName(@QueryParam("name") String name){
+    public Response findByName(@QueryParam("token") @DefaultValue("") String token,
+                               @QueryParam("name") String name) {
 
-        return userService.findByName(name);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
+
+        return Response.ok(userService.findByName(name)).build();
     }
 
     @GET
     @Path("/search/surname")
-    public List<User> findBySurname(@QueryParam("surname") String surname){
+    public Response findBySurname(@QueryParam("token") @DefaultValue("") String token,
+                                  @QueryParam("surname") String surname) {
 
-        return userService.findBySurname(surname);
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
+
+        return Response.ok(userService.findBySurname(surname)).build();
     }
 
     @GET
     @Path("/search/role")
-    public List<User> findByRole(@QueryParam("role") String role)
-    {
+    public Response findByRole(@QueryParam("token") @DefaultValue("") String token,
+                               @QueryParam("role") String role) {
 
-        RoleName roleName = RoleName.valueOf(role.toUpperCase());
+        Response error = authChecker.check(token, RoleName.ADMIN);
+        if (error != null) return error;
 
-        return  userService.findByRole(roleName);
+        try {
+            RoleName roleName = RoleName.valueOf(role.toUpperCase());
+            return Response.ok(userService.findByRole(roleName)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Ruolo non valido: " + role).build();
+        }
     }
 
 

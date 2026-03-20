@@ -31,6 +31,10 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @Column(nullable = false)
+    private String password;
+
+
     public String getCodiceFiscale() {
         return codiceFiscale;
     }
@@ -77,5 +81,13 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

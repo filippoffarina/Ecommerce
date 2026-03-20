@@ -90,6 +90,7 @@ public class UserService implements UserServicePort {
         u.setSurname(request.surname);
         u.setMail(request.mail);
         u.setPhone(request.phone);
+        u.setPassword(request.password);
 
         for (String roleName : request.roles) {
             Role role = new Role();

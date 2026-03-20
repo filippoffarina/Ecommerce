@@ -9,5 +9,6 @@ public class UserRequest {
     public String surname;
     public String mail;
     public Long phone;
+    public String password;
     public List<String> roles; // ["ADMIN", "CUSTOMER"]
 }
