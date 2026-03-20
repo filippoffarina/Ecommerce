@@ -45,6 +45,28 @@ public class UserResource {
 
     }
 
+    @PUT
+    @Path("/cf/roles/add")
+    public Response addRole(@QueryParam("cf") String cf, @QueryParam("role") String role) {
+
+        Optional<String> error = userService.addRole(cf, role);
+
+        return error.isPresent()
+                ? Response.status(Response.Status.BAD_REQUEST).entity(error.get()).build()
+                : Response.ok("Ruolo aggiunto con successo").build();
+    }
+
+    @DELETE
+    @Path("/cf/roles/remove")
+    public Response removeRole(@QueryParam("cf") String cf, @QueryParam("role") String role) {
+
+        Optional<String> error = userService.removeRole(cf, role);
+
+        return error.isPresent()
+                ? Response.status(Response.Status.BAD_REQUEST).entity(error.get()).build()
+                : Response.ok("Rule removed").build();
+    }
+
     @DELETE
     @Path("/deleteProfile")
     public Response delete(@QueryParam("cf") String cf){

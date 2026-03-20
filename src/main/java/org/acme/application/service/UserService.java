@@ -102,6 +102,58 @@ public class UserService implements UserServicePort {
     }
 
     @Transactional
+    public Optional<String> addRole(String cf,String roleName){
+
+        RoleName rn;
+        rn = RoleName.valueOf(roleName.toUpperCase());
+
+        Optional<User> userTemp = userRepository.findByCF(cf);
+
+        if(userTemp.isEmpty())
+            return Optional.of("User not found");
+
+        User u = userTemp.get();
+
+        boolean present = u.getRoles().stream()
+                .anyMatch(r -> r.getName() == rn);
+
+        if(present)
+            return Optional.of("The user has already the role of "+ roleName);
+
+        Role role = new Role();
+        role.setName(rn);
+        u.getRoles().add(role);
+
+        return Optional.empty();
+    }
+
+    @Transactional
+    public Optional<String> removeRole(String cf,String roleName){
+
+        RoleName rn;
+        rn = RoleName.valueOf(roleName.toUpperCase());
+
+        Optional<User> userTemp = userRepository.findByCF(cf);
+
+        if(userTemp.isEmpty())
+            return Optional.of("User not found");
+
+        User u = userTemp.get();
+
+        Optional<Role> role = u.getRoles().stream()
+                .filter(r -> r.getName() == rn)
+                .findFirst();
+
+        if (role.isEmpty())
+            return Optional.of("The user has not the role of "+ roleName);
+
+        u.getRoles().remove(role.get());
+
+        return Optional.empty();
+
+    }
+
+    @Transactional
     public Optional<User> updateUser(String cf, String mail, Long number){
 
         return userRepository.findByCF(cf)

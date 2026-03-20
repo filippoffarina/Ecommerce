@@ -31,4 +31,8 @@ public interface UserServicePort {
 
     public List<User> findByRole(RoleName roleName);
 
+    public Optional<String> addRole(String cf, String roleName);
+
+    public Optional<String> removeRole(String cf, String roleName);
+
 }
