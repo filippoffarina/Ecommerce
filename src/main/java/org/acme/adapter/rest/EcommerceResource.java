@@ -34,7 +34,7 @@ public class EcommerceResource {
     @GET
     public Response allObjects(@QueryParam("token") String token) {
 
-        Response error = authChecker.check(token, RoleName.CUSTOMER);
+        Response error = authChecker.check(token, RoleName.PRODUCER);
         if (error != null) return error;
 
         return Response.ok(Product.listAll()).build();
