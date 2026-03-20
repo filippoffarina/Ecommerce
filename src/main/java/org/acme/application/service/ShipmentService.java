@@ -7,6 +7,7 @@ import org.acme.domain.entity.Product;
 import org.acme.port.ShipmentServicePort;
 
 import java.util.Date;
+import java.util.Optional;
 
 @ApplicationScoped
 public class ShipmentService implements ShipmentServicePort {
@@ -14,18 +15,20 @@ public class ShipmentService implements ShipmentServicePort {
     @Inject
     CalculateShipCost cost;
 
-    private Date date = new Date();
+    @Inject
+    ProductService productService;
 
-    public Estimate getEstimate(Long productId, int qta){
+
+    public Estimate getEstimate(Long productId, int qta,String zone){
 
         Estimate estimate = new Estimate();
-        Product p = Product.findById(productId);
+        Optional<Product> p = productService.findProductById(productId);
 
-        estimate.total = cost.shipCost(qta,"Italy",p.price);
-        estimate.objectCost = p.price * qta;
-        estimate.shipCost = estimate.total - p.price * qta;
+        estimate.total = cost.shipCost(qta,zone,p.get().getPrice());
+        estimate.objectCost = p.get().getPrice() * qta;
+        estimate.shipCost = estimate.total - p.get().getPrice() * qta;
         estimate.courer = "GLS";
-        estimate.estimatedDate = date;
+        estimate.estimatedDate = new Date();
 
         return estimate; // Viene trasformato in JSON automaticamente
     }
